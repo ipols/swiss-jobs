@@ -1,0 +1,11 @@
+[project]
+name = "swiss-jobs"
+version = "0.1.0"
+description = "Swiss job market visualization with AI exposure scores"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.50.0",
+    "httpx>=0.28.0",
+    "openpyxl>=3.1.0",
+    "python-dotenv>=1.0.0",
+]

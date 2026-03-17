@@ -1,0 +1,21 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# macOS
+.DS_Store
+
+# Claude Code local config
+.claude/
+
+# Large data files (regeneratable — see README)
+data/esco/occupations_full.json
+data/beruf_se_24311552.xlsx
+data/employment_raw.xlsx
+
+# Docs (internal planning)
+docs/
