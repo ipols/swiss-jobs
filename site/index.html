@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Exposure Across Swiss Jobs</title>
+<title>AI Exposure of Jobs in Switzerland</title>
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -160,15 +160,15 @@ footer a:hover { text-decoration: underline; }
 <div id="wrapper">
 <div id="header">
   <div class="intro">
-    <h1>AI Exposure Across Swiss Jobs</h1>
-    <p>Every rectangle is a Swiss occupation. <b>Area</b> shows how many people work in it; <b>color</b> shows AI exposure, scored 0 (green, minimal) to 10 (red, maximum). The map covers <b>406 occupations</b> and <b>3.9 million workers</b>. Hover any tile for details.</p>
-    <p>Each occupation was scored by an LLM (<a href="https://anthropic.com">Claude</a>) analyzing the specific skills and tasks it requires, using data from the European <a href="https://esco.ec.europa.eu">ESCO</a> framework. Scores estimate how much current AI can perform or accelerate the core work.</p>
-    <p><b>These are model-generated estimates, not predictions.</b> A high score means the work is being reshaped by AI &mdash; not that jobs will disappear.</p>
+    <h1>AI Exposure of Jobs in Switzerland</h1>
+    <p>This tool visualizes <b>406 occupations</b> covering <b>3.9 million jobs</b> across the Swiss economy. Each rectangle is one occupation &mdash; its area is proportional to the number of jobs, its color shows AI exposure, scored from 0 (green, minimal) to 10 (red, maximum). Hover any tile for details.</p>
+    <p>Each occupation was scored by a large language model (<a href="https://anthropic.com">Claude</a>) analyzing the specific tasks and skills it requires. Employment data comes from the Swiss Federal Statistical Office (BFS); occupation descriptions from the European <a href="https://esco.ec.europa.eu">ESCO</a> classification. Scores estimate how much of the core work current AI can perform or accelerate.</p>
+    <p><b>This is a map of exposure, not a map of risk.</b> High-scoring occupations are being reshaped by AI &mdash; that is not the same as being replaced.</p>
   </div>
 
   <div class="stats-row">
     <div class="stat-section">
-      <h3>Total workers</h3>
+      <h3>Total jobs</h3>
       <div class="stat-big" id="statTotal">&mdash;</div>
     </div>
     <div class="stat-section" id="block2"></div>
@@ -457,7 +457,7 @@ footer a:hover { text-decoration: underline; }
 
     let stats = '';
     if (d._groupTitle) stats += `<span class="label">Group</span><span class="value">${d._groupTitle}</span>`;
-    stats += `<span class="label">Workers</span><span class="value">${formatNumber(d.employment)}</span>`;
+    stats += `<span class="label">Jobs</span><span class="value">${formatNumber(d.employment)}</span>`;
     stats += `<span class="label">ISCO</span><span class="value">${d.code}</span>`;
     if (d.skill_level) stats += `<span class="label">Education</span><span class="value">${SKILL_LABELS[d.skill_level] || '\u2014'}</span>`;
     if (d.confidence) stats += `<span class="label">Confidence</span><span class="value">${d.confidence}</span>`;
@@ -594,7 +594,7 @@ footer a:hover { text-decoration: underline; }
     document.getElementById('block7').innerHTML =
       `<h3>Wages exposed</h3>
        <div class="stat-big" style="color:${exposureColorSolid(8)}">CHF ${(wagesExposed / 1e9).toFixed(0)}B</div>
-       <div class="stat-label">annual, in jobs scoring 7+</div>`;
+       <div class="stat-label">annual, in occupations scoring 7+</div>`;
   }
 
   // ── Legend ────────────────────────────────────────────────────────────
