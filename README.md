@@ -1,6 +1,6 @@
-# AI Exposure Across Swiss Jobs
+# AI Exposure of Jobs in Switzerland
 
-Interactive treemap visualizing AI exposure scores for 406 Swiss occupations covering 3.9 million workers.
+Interactive treemap visualizing AI exposure scores for 406 Swiss occupations covering 3.9 million jobs.
 
 **[Live demo →](https://ipols.github.io/swiss-jobs/)**
 
