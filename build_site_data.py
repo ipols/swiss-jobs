@@ -3,13 +3,17 @@ Build site/data.json — flat Karpathy-style treemap data.
 
 Produces 2-digit groups, each containing 4-digit leaf occupations directly.
 Removes "onA" (not elsewhere classified) residual categories.
-Adds English titles from ESCO data.
+Adds English and French titles from ESCO data.
+Embeds translated rationales (French/German) if available.
 
 Merges:
   - data/occupation_tree.json (hierarchical employment data, levels 1-4)
   - data/scores.json (AI exposure scores at 4-digit level)
   - data/occupations.json (wages at 2-digit level)
   - data/esco/occupations_full.json (English titles)
+  - data/esco/titles_fr.json (French titles from ESCO)
+  - data/rationales_fr.json (French rationales, translated by Claude)
+  - data/rationales_de.json (German rationales, translated by Claude)
 
 Usage:
     uv run python build_site_data.py
@@ -75,6 +79,62 @@ MANUAL_EN_TITLES = {
     "7549": "Craft and related workers not elsewhere classified",
 }
 
+# ISCO-08 standard French titles for 2-digit sub-major groups
+ISCO_2DIGIT_FR = {
+    "01": "Officiers des forces armées",
+    "02": "Sous-officiers des forces armées",
+    "03": "Autres membres des forces armées",
+    "11": "Directeurs généraux, cadres supérieurs et membres de l'exécutif et des corps législatifs",
+    "12": "Directeurs de services administratifs et commerciaux",
+    "13": "Directeurs de la production et des services spécialisés",
+    "14": "Directeurs et gérants de l'hôtellerie, la restauration, le commerce et d'autres services",
+    "21": "Spécialistes des sciences et de l'ingénierie",
+    "22": "Spécialistes de la santé",
+    "23": "Spécialistes de l'enseignement",
+    "24": "Spécialistes en administration d'entreprises",
+    "25": "Spécialistes des technologies de l'information et des communications",
+    "26": "Spécialistes de la justice, des sciences sociales et de la culture",
+    "31": "Professions intermédiaires des sciences et de l'ingénierie",
+    "32": "Professions intermédiaires de la santé",
+    "33": "Professions intermédiaires de l'administration d'entreprises",
+    "34": "Professions intermédiaires de la justice, des services sociaux et de la culture",
+    "35": "Techniciens des technologies de l'information et des communications",
+    "41": "Employés de bureau généraux et opérateurs de clavier",
+    "42": "Employés de réception, guichetiers et assimilés",
+    "43": "Employés de comptabilité et d'enregistrement des matériaux",
+    "44": "Autres employés de type administratif",
+    "51": "Personnel des services directs aux particuliers",
+    "52": "Commerçants et vendeurs",
+    "53": "Personnel soignant",
+    "54": "Personnel des services de protection et de sécurité",
+    "61": "Agriculteurs et ouvriers qualifiés de l'agriculture commerciale",
+    "62": "Travailleurs qualifiés de la sylviculture, de la pêche et de la chasse",
+    "63": "Agriculteurs, pêcheurs et chasseurs de subsistance",
+    "71": "Métiers qualifiés du bâtiment et assimilés",
+    "72": "Métiers qualifiés de la métallurgie, de la construction mécanique et assimilés",
+    "73": "Métiers de l'artisanat et de l'imprimerie",
+    "74": "Métiers de l'électricité et de l'électrotechnique",
+    "75": "Métiers de l'alimentation, du bois, de l'habillement et autres artisans",
+    "81": "Conducteurs de machines et d'installations fixes",
+    "82": "Assembleurs",
+    "83": "Conducteurs de véhicules et d'engins lourds",
+    "91": "Aides de ménage et agents d'entretien",
+    "92": "Manœuvres de l'agriculture, de la pêche et de la sylviculture",
+    "93": "Manœuvres des mines, du bâtiment, des industries manufacturières et des transports",
+    "94": "Assistants de préparation alimentaire",
+    "95": "Vendeurs ambulants et travailleurs assimilés",
+    "96": "Éboueurs et autres travailleurs non qualifiés",
+}
+
+# Manual French titles for codes missing from ESCO
+MANUAL_FR_TITLES = {
+    "1321": "Directeurs de la production manufacturière",
+    "2142": "Ingénieurs civils",
+    "3221": "Professions intermédiaires des soins infirmiers et de la sage-femme",
+    "4414": "Scribes et assimilés",
+    "7549": "Artisans et ouvriers des métiers non classés ailleurs",
+}
+
 
 def main():
     # Load occupation tree
@@ -111,6 +171,29 @@ def main():
         print(f"Loaded {len(en_titles)} English titles from ESCO")
     en_titles.update(MANUAL_EN_TITLES)
     en_titles.update(ISCO_2DIGIT_EN)
+
+    # Load French titles from ESCO
+    fr_titles = {}
+    fr_path = "data/esco/titles_fr.json"
+    if os.path.exists(fr_path):
+        with open(fr_path) as f:
+            fr_titles = json.load(f)
+        print(f"Loaded {len(fr_titles)} French titles from ESCO")
+    fr_titles.update(MANUAL_FR_TITLES)
+    fr_titles.update(ISCO_2DIGIT_FR)
+
+    # Load translated rationales
+    rationales_fr = {}
+    if os.path.exists("data/rationales_fr.json"):
+        with open("data/rationales_fr.json") as f:
+            rationales_fr = json.load(f)
+        print(f"Loaded {len(rationales_fr)} French rationales")
+
+    rationales_de = {}
+    if os.path.exists("data/rationales_de.json"):
+        with open("data/rationales_de.json") as f:
+            rationales_de = json.load(f)
+        print(f"Loaded {len(rationales_de)} German rationales")
 
     # Collect all 4-digit leaf nodes from the tree, excluding onA
     def collect_leaves(node):
@@ -154,6 +237,7 @@ def main():
                 "code": code_2d,
                 "title_de": node_2d["title_de"],
                 "title": en_titles.get(code_2d, node_2d["title_de"]),
+                "title_fr": fr_titles.get(code_2d, en_titles.get(code_2d, node_2d["title_de"])),
                 "wage_monthly": wages_by_code.get(code_2d),
                 "leaves": filtered,
             }
@@ -179,6 +263,7 @@ def main():
                 "code": code_1d,
                 "title_de": major["title_de"],
                 "title": en_titles.get(code_1d, major["title_de"]),
+                "title_fr": fr_titles.get(code_1d, en_titles.get(code_1d, major["title_de"])),
                 "wage_monthly": wages_by_code.get(code_1d),
                 "leaves": filtered,
             }
@@ -203,10 +288,13 @@ def main():
                 "code": lcode,
                 "title": en_titles.get(lcode, leaf["title_de"]),
                 "title_de": leaf["title_de"],
+                "title_fr": fr_titles.get(lcode, en_titles.get(lcode, leaf["title_de"])),
                 "employment": leaf["employment"],
                 "exposure": exposure,
                 "confidence": score.get("confidence"),
                 "rationale": score.get("rationale", ""),
+                "rationale_fr": rationales_fr.get(lcode, ""),
+                "rationale_de": rationales_de.get(lcode, ""),
                 "skill_level": leaf.get("isco_skill_level"),
                 "wage_monthly": g["wage_monthly"],  # inherit from 2-digit group
             }
@@ -232,6 +320,7 @@ def main():
             "code": g["code"],
             "title": g["title"],
             "title_de": g["title_de"],
+            "title_fr": g["title_fr"],
             "employment": group_emp,
             "exposure": group_exposure,
             "wage_monthly": g["wage_monthly"],

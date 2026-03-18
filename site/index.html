@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Exposure of Jobs in Switzerland</title>
+<title>Exposition des emplois suisses à l'IA</title>
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -29,6 +29,39 @@ body {
 
 #header {
   padding: 20px 28px 16px;
+  position: relative;
+}
+
+#lang-selector {
+  position: absolute;
+  top: 22px;
+  right: 28px;
+  display: flex;
+  gap: 0;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+#lang-selector button {
+  background: none;
+  border: none;
+  color: var(--fg2);
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-family: inherit;
+  letter-spacing: 0.05em;
+}
+#lang-selector button.active {
+  color: #fff;
+  font-weight: 600;
+}
+#lang-selector button:hover:not(.active) {
+  color: var(--fg);
+}
+#lang-selector button + button::before {
+  content: '·';
+  color: var(--fg2);
+  margin-right: 6px;
 }
 
 .intro { margin-bottom: 18px; }
@@ -37,18 +70,8 @@ body {
   font-weight: 700;
   letter-spacing: -0.02em;
   margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
+  padding-right: 80px;
 }
-.intro h1 a {
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--fg2);
-  text-decoration: none;
-}
-.intro h1 a:hover { text-decoration: underline; }
 .intro p {
   font-size: 15px;
   line-height: 1.6;
@@ -159,16 +182,21 @@ footer a:hover { text-decoration: underline; }
 
 <div id="wrapper">
 <div id="header">
+  <div id="lang-selector">
+    <button data-lang="fr" class="active">FR</button>
+    <button data-lang="de">DE</button>
+    <button data-lang="en">EN</button>
+  </div>
   <div class="intro">
-    <h1>AI Exposure of Jobs in Switzerland</h1>
-    <p>This tool visualizes <b>406 occupations</b> covering <b>3.9 million jobs</b> across the Swiss economy. Each rectangle is one occupation &mdash; its area is proportional to the number of jobs, its color shows AI exposure, scored from 0 (green, minimal) to 10 (red, maximum). Hover any tile for details.</p>
-    <p>Each occupation was scored by a large language model (<a href="https://anthropic.com">Claude</a>) analyzing the specific tasks and skills it requires. Employment data comes from the Swiss Federal Statistical Office (BFS); occupation descriptions from the European <a href="https://esco.ec.europa.eu">ESCO</a> classification. Scores estimate how much of the core work current AI can perform or accelerate.</p>
-    <p><b>This is a map of exposure, not a map of risk.</b> High-scoring occupations are being reshaped by AI &mdash; that is not the same as being replaced.</p>
+    <h1 id="page-title"></h1>
+    <p id="intro-p1"></p>
+    <p id="intro-p2"></p>
+    <p id="intro-p3"></p>
   </div>
 
   <div class="stats-row">
     <div class="stat-section">
-      <h3>Total jobs</h3>
+      <h3 id="stat-total-label">Total emplois</h3>
       <div class="stat-big" id="statTotal">&mdash;</div>
     </div>
     <div class="stat-section" id="block2"></div>
@@ -180,19 +208,16 @@ footer a:hover { text-decoration: underline; }
   </div>
 
   <div class="gradient-legend">
-    <span>Low exposure</span>
+    <span id="legend-low"></span>
     <canvas id="gradientLegend" width="80" height="8"></canvas>
-    <span>High exposure</span>
+    <span id="legend-high"></span>
   </div>
 </div>
 
 <canvas id="canvas"></canvas>
 </div>
 
-<footer>
-  Employment: BFS Strukturerhebung (pooled 2019–2021) · Wages: BFS ESS 2022 · AI exposure scored by <a href="https://anthropic.com">Claude</a> (Anthropic) using ESCO skill data · Classification: CH-ISCO-19<br>
-  By Iskander Pols · Inspired by <a href="https://karpathy.ai/jobs/">US Job Market Visualizer</a> · <a href="https://github.com/ipols/swiss-jobs">Source code on GitHub</a>
-</footer>
+<footer id="footer"></footer>
 
 <div id="tooltip">
   <div class="tt-title"></div>
@@ -204,6 +229,163 @@ footer a:hover { text-decoration: underline; }
 <script>
 (function() {
   'use strict';
+
+  // ── Translations ────────────────────────────────────────────────────
+  const T = {
+    fr: {
+      pageTitle: "Exposition des emplois suisses \u00e0 l\u2019IA",
+      introP1: 'Cet outil visualise <b>406 professions</b> couvrant <b>3,9 millions d\u2019emplois</b> dans l\u2019\u00e9conomie suisse. Chaque rectangle repr\u00e9sente une profession\u2009\u2014\u2009sa surface est proportionnelle au nombre d\u2019emplois, sa couleur indique l\u2019exposition \u00e0 l\u2019IA, not\u00e9e de 0 (vert, minimale) \u00e0 10 (rouge, maximale). Survolez une tuile pour les d\u00e9tails.',
+      introP2: 'Chaque profession a \u00e9t\u00e9 \u00e9valu\u00e9e par un grand mod\u00e8le de langage (<a href="https://anthropic.com">Claude</a>) analysant les t\u00e2ches et comp\u00e9tences sp\u00e9cifiques requises. Les donn\u00e9es d\u2019emploi proviennent de l\u2019Office f\u00e9d\u00e9ral de la statistique (OFS)\u2009; les descriptions des professions de la classification europ\u00e9enne <a href="https://esco.ec.europa.eu">ESCO</a>. Les scores estiment dans quelle mesure l\u2019IA actuelle peut effectuer ou acc\u00e9l\u00e9rer le travail principal.',
+      introP3: '<b>Ceci est une carte d\u2019exposition, pas une carte de risque.</b> Les professions \u00e0 score \u00e9lev\u00e9 sont transform\u00e9es par l\u2019IA\u2009\u2014\u2009ce n\u2019est pas la m\u00eame chose qu\u2019\u00eatre remplac\u00e9.',
+      statTotal: 'Total emplois',
+      statAvg: 'Exposition moy.',
+      statAvgSub: 'pond\u00e9r\u00e9e par l\u2019emploi, 0\u201310',
+      statHistogram: 'Emplois par exposition',
+      statTiers: 'Niveaux d\u2019exposition',
+      statByPay: 'Exposition par salaire',
+      statByEdu: 'Exposition par formation',
+      statWages: 'Salaires expos\u00e9s',
+      statWagesSub: 'annuels, professions \u00e0 score 7+',
+      legendLow: 'Faible exposition',
+      legendHigh: 'Forte exposition',
+      tierLabels: ['Minimale (0\u20131)', 'Faible (2\u20133)', 'Mod\u00e9r\u00e9e (4\u20135)', '\u00c9lev\u00e9e (6\u20137)', 'Tr\u00e8s \u00e9lev\u00e9e (8\u201310)'],
+      payBands: ['\u2264 CHF 5K', 'CHF 5\u20136K', 'CHF 6\u20137K', 'CHF 7\u20139K', 'CHF 9K+'],
+      eduLabels: ['\u00c9cole primaire', 'Apprentissage / sec. sup.', 'Formation prof. sup.', 'Bachelor ou plus'],
+      skillLabels: {1: 'Pas de formation / primaire', 2: 'Sec. sup. / apprentissage', 3: 'Formation prof. sup.', 4: 'Bachelor+'},
+      ttExposure: 'Exposition IA',
+      ttGroup: 'Groupe',
+      ttJobs: 'Emplois',
+      ttEducation: 'Formation',
+      ttConfidence: 'Confiance',
+      tileJobs: 'emplois',
+      footer1: 'Emploi\u2009: OFS Relev\u00e9 structurel (pool\u00e9 2019\u20132021) \u00b7 Salaires\u2009: OFS ESS 2022 \u00b7 Exposition IA \u00e9valu\u00e9e par <a href="https://anthropic.com">Claude</a> (Anthropic) avec donn\u00e9es ESCO \u00b7 Classification\u2009: CH-ISCO-19',
+      footer2: 'Par Iskander Pols \u00b7 Inspir\u00e9 par <a href="https://karpathy.ai/jobs/">US Job Market Visualizer</a> \u00b7 <a href="https://github.com/ipols/swiss-jobs">Code source sur GitHub</a>',
+    },
+    de: {
+      pageTitle: 'KI-Exposition von Berufen in der Schweiz',
+      introP1: 'Dieses Tool visualisiert <b>406 Berufe</b>, die <b>3,9 Millionen Arbeitspl\u00e4tze</b> in der Schweizer Wirtschaft abdecken. Jedes Rechteck steht f\u00fcr einen Beruf\u2009\u2014\u2009seine Fl\u00e4che ist proportional zur Anzahl der Arbeitspl\u00e4tze, seine Farbe zeigt die KI-Exposition, bewertet von 0 (gr\u00fcn, minimal) bis 10 (rot, maximal). Fahren Sie mit der Maus \u00fcber eine Kachel f\u00fcr Details.',
+      introP2: 'Jeder Beruf wurde von einem grossen Sprachmodell (<a href="https://anthropic.com">Claude</a>) bewertet, das die spezifischen Aufgaben und Kompetenzen analysiert. Besch\u00e4ftigungsdaten stammen vom Bundesamt f\u00fcr Statistik (BFS); Berufsbeschreibungen aus der europ\u00e4ischen <a href="https://esco.ec.europa.eu">ESCO</a>-Klassifikation. Die Scores sch\u00e4tzen, inwieweit aktuelle KI die Kernarbeit ausf\u00fchren oder beschleunigen kann.',
+      introP3: '<b>Dies ist eine Karte der Exposition, nicht eine Karte des Risikos.</b> Berufe mit hohem Score werden durch KI transformiert\u2009\u2014\u2009das ist nicht dasselbe wie ersetzt zu werden.',
+      statTotal: 'Total Stellen',
+      statAvg: 'Durchschn. Exposition',
+      statAvgSub: 'besch\u00e4ftigungsgewichtet, 0\u201310',
+      statHistogram: 'Stellen nach Exposition',
+      statTiers: 'Expositionsstufen',
+      statByPay: 'Exposition nach Lohn',
+      statByEdu: 'Exposition nach Bildung',
+      statWages: 'Exponierte L\u00f6hne',
+      statWagesSub: 'j\u00e4hrlich, Berufe mit Score 7+',
+      legendLow: 'Geringe Exposition',
+      legendHigh: 'Hohe Exposition',
+      tierLabels: ['Minimal (0\u20131)', 'Gering (2\u20133)', 'Moderat (4\u20135)', 'Hoch (6\u20137)', 'Sehr hoch (8\u201310)'],
+      payBands: ['\u2264 CHF 5K', 'CHF 5\u20136K', 'CHF 6\u20137K', 'CHF 7\u20139K', 'CHF 9K+'],
+      eduLabels: ['Primarschule', 'Lehre / Sek. II', 'H\u00f6here Berufsbildung', 'Bachelor oder h\u00f6her'],
+      skillLabels: {1: 'Keine formale / Primar', 2: 'Sek. II / Lehre', 3: 'H\u00f6here Berufsbildung', 4: 'Bachelor+'},
+      ttExposure: 'KI-Exposition',
+      ttGroup: 'Gruppe',
+      ttJobs: 'Stellen',
+      ttEducation: 'Bildung',
+      ttConfidence: 'Konfidenz',
+      tileJobs: 'Stellen',
+      footer1: 'Besch\u00e4ftigung: BFS Strukturerhebung (gepoolt 2019\u20132021) \u00b7 L\u00f6hne: BFS LSE 2022 \u00b7 KI-Exposition bewertet durch <a href="https://anthropic.com">Claude</a> (Anthropic) mit ESCO-Daten \u00b7 Klassifikation: CH-ISCO-19',
+      footer2: 'Von Iskander Pols \u00b7 Inspiriert von <a href="https://karpathy.ai/jobs/">US Job Market Visualizer</a> \u00b7 <a href="https://github.com/ipols/swiss-jobs">Quellcode auf GitHub</a>',
+    },
+    en: {
+      pageTitle: 'AI Exposure of Jobs in Switzerland',
+      introP1: 'This tool visualizes <b>406 occupations</b> covering <b>3.9 million jobs</b> across the Swiss economy. Each rectangle is one occupation\u2009\u2014\u2009its area is proportional to the number of jobs, its color shows AI exposure, scored from 0 (green, minimal) to 10 (red, maximum). Hover any tile for details.',
+      introP2: 'Each occupation was scored by a large language model (<a href="https://anthropic.com">Claude</a>) analyzing the specific tasks and skills it requires. Employment data comes from the Swiss Federal Statistical Office (BFS); occupation descriptions from the European <a href="https://esco.ec.europa.eu">ESCO</a> classification. Scores estimate how much of the core work current AI can perform or accelerate.',
+      introP3: '<b>This is a map of exposure, not a map of risk.</b> High-scoring occupations are being reshaped by AI\u2009\u2014\u2009that is not the same as being replaced.',
+      statTotal: 'Total jobs',
+      statAvg: 'Avg. exposure',
+      statAvgSub: 'job-weighted, 0\u201310',
+      statHistogram: 'Jobs by exposure',
+      statTiers: 'Exposure tiers',
+      statByPay: 'Exposure by pay',
+      statByEdu: 'Exposure by education',
+      statWages: 'Wages exposed',
+      statWagesSub: 'annual, in occupations scoring 7+',
+      legendLow: 'Low exposure',
+      legendHigh: 'High exposure',
+      tierLabels: ['Minimal (0\u20131)', 'Low (2\u20133)', 'Moderate (4\u20135)', 'High (6\u20137)', 'Very high (8\u201310)'],
+      payBands: ['\u2264 CHF 5K', 'CHF 5\u20136K', 'CHF 6\u20137K', 'CHF 7\u20139K', 'CHF 9K+'],
+      eduLabels: ['Primary education', 'Apprenticeship / upper sec.', 'Higher vocational', "Bachelor's or higher"],
+      skillLabels: {1: 'No formal / primary', 2: 'Upper secondary / apprenticeship', 3: 'Higher vocational', 4: "Bachelor's+"},
+      ttExposure: 'AI Exposure',
+      ttGroup: 'Group',
+      ttJobs: 'Jobs',
+      ttEducation: 'Education',
+      ttConfidence: 'Confidence',
+      tileJobs: 'jobs',
+      footer1: 'Employment: BFS Strukturerhebung (pooled 2019\u20132021) \u00b7 Wages: BFS ESS 2022 \u00b7 AI exposure scored by <a href="https://anthropic.com">Claude</a> (Anthropic) using ESCO skill data \u00b7 Classification: CH-ISCO-19',
+      footer2: 'By Iskander Pols \u00b7 Inspired by <a href="https://karpathy.ai/jobs/">US Job Market Visualizer</a> \u00b7 <a href="https://github.com/ipols/swiss-jobs">Source code on GitHub</a>',
+    },
+  };
+
+  // ── Language ────────────────────────────────────────────────────────
+  let currentLang = 'fr';
+
+  function getLang() {
+    const params = new URLSearchParams(window.location.search);
+    const paramLang = params.get('lang');
+    if (paramLang && T[paramLang]) return paramLang;
+    const stored = localStorage.getItem('swiss-jobs-lang');
+    if (stored && T[stored]) return stored;
+    const browserLang = (navigator.language || '').substring(0, 2);
+    if (browserLang === 'de') return 'de';
+    if (browserLang === 'en') return 'en';
+    return 'fr';
+  }
+
+  function setLang(lang) {
+    currentLang = lang;
+    localStorage.setItem('swiss-jobs-lang', lang);
+    const url = new URL(window.location);
+    url.searchParams.set('lang', lang);
+    history.replaceState(null, '', url);
+    document.documentElement.lang = lang;
+    applyTranslations();
+    if (allLeaves.length) {
+      // Re-assign group titles in the current language
+      for (const cr of catRects) {
+        for (const ir of rects) {
+          if (ir._groupCode === cr.code) {
+            ir._groupTitle = titleFor(cr);
+          }
+        }
+      }
+      updateStats();
+      draw();
+    }
+    // Update selector active state
+    document.querySelectorAll('#lang-selector button').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.lang === lang);
+    });
+  }
+
+  function applyTranslations() {
+    const t = T[currentLang];
+    document.title = t.pageTitle;
+    document.getElementById('page-title').textContent = t.pageTitle;
+    document.getElementById('intro-p1').innerHTML = t.introP1;
+    document.getElementById('intro-p2').innerHTML = t.introP2;
+    document.getElementById('intro-p3').innerHTML = t.introP3;
+    document.getElementById('stat-total-label').textContent = t.statTotal;
+    document.getElementById('legend-low').textContent = t.legendLow;
+    document.getElementById('legend-high').textContent = t.legendHigh;
+    document.getElementById('footer').innerHTML = t.footer1 + '<br>' + t.footer2;
+  }
+
+  function titleFor(d) {
+    if (currentLang === 'fr') return d.title_fr || d.title;
+    if (currentLang === 'de') return d.title_de || d.title;
+    return d.title;
+  }
+
+  function rationaleFor(d) {
+    if (currentLang === 'fr' && d.rationale_fr) return d.rationale_fr;
+    if (currentLang === 'de' && d.rationale_de) return d.rationale_de;
+    return d.rationale || '';
+  }
 
   // ── Color scale ──────────────────────────────────────────────────────
   const COLOR_STOPS = [
@@ -238,7 +420,6 @@ footer a:hover { text-decoration: underline; }
     return exposureColorRGBA(score, 1);
   }
 
-  // Returns true if the tile background is light enough to need dark text
   function isLightBackground(score) {
     if (score == null) return false;
     const s = Math.max(0, Math.min(10, score));
@@ -250,18 +431,9 @@ footer a:hover { text-decoration: underline; }
     const r = r1 + (r2 - r1) * t;
     const g = g1 + (g2 - g1) * t;
     const b = b1 + (b2 - b1) * t;
-    // Perceived luminance (ITU-R BT.709)
     const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
     return lum > 140;
   }
-
-  // ── Education labels ─────────────────────────────────────────────────
-  const SKILL_LABELS = {
-    1: 'No formal / primary',
-    2: 'Upper secondary / apprenticeship',
-    3: 'Higher vocational',
-    4: "Bachelor's+",
-  };
 
   // ── Squarified treemap ───────────────────────────────────────────────
   function squarify(items, x, y, w, h) {
@@ -316,9 +488,9 @@ footer a:hover { text-decoration: underline; }
 
   // ── State ────────────────────────────────────────────────────────────
   let DATA = [];
-  let allLeaves = [];  // flat list of all 4-digit occupations
+  let allLeaves = [];
   let rects = [];
-  let catRects = [];   // group rectangles for border drawing
+  let catRects = [];
   let hovered = null;
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
@@ -334,9 +506,10 @@ footer a:hover { text-decoration: underline; }
   }
 
   function tileSubInfo(d) {
+    const t = T[currentLang];
     const parts = [];
     if (d.exposure != null) parts.push(d.exposure + '/10');
-    if (d.employment) parts.push(formatNumber(d.employment) + ' jobs');
+    if (d.employment) parts.push(formatNumber(d.employment) + ' ' + t.tileJobs);
     return parts.join(' \u00b7 ');
   }
 
@@ -344,7 +517,7 @@ footer a:hover { text-decoration: underline; }
   function layout() {
     const wrapper = document.getElementById('wrapper');
     const w = wrapper.clientWidth;
-    const h = Math.round(w * 1.2);  // tall for scrollable view, more labels visible
+    const h = Math.round(w * 1.2);
 
     canvas.width = w * dpr;
     canvas.height = h * dpr;
@@ -353,7 +526,6 @@ footer a:hover { text-decoration: underline; }
 
     const tx = MARGIN, ty = MARGIN, tw = w - MARGIN * 2, th = h - MARGIN * 2;
 
-    // Build category items from 2-digit groups
     const categories = DATA
       .filter(g => g.employment > 0)
       .map(g => ({
@@ -377,7 +549,7 @@ footer a:hover { text-decoration: underline; }
       );
       for (const ir of innerRects) {
         ir._groupCode = cr.code;
-        ir._groupTitle = cr.title;
+        ir._groupTitle = titleFor(cr);
         rects.push(ir);
       }
     }
@@ -404,7 +576,6 @@ footer a:hover { text-decoration: underline; }
         ctx.strokeRect(rx, ry, rw, rh);
       }
 
-      // Labels
       if (rw > 50 && rh > 18) {
         ctx.save();
         ctx.beginPath();
@@ -416,7 +587,7 @@ footer a:hover { text-decoration: underline; }
         ctx.font = `500 ${fontSize}px -apple-system, system-ui, sans-serif`;
         ctx.fillStyle = isHovered ? (light ? '#000' : '#fff') : (light ? 'rgba(0,0,0,0.82)' : 'rgba(255,255,255,0.85)');
         ctx.textBaseline = 'top';
-        ctx.fillText(r.title, rx + 5, ry + 4);
+        ctx.fillText(titleFor(r), rx + 5, ry + 4);
 
         if (rh > 34 && rw > 60) {
           ctx.font = `400 ${Math.max(8, fontSize - 2)}px -apple-system, system-ui, sans-serif`;
@@ -441,14 +612,15 @@ footer a:hover { text-decoration: underline; }
 
   // ── Tooltip ──────────────────────────────────────────────────────────
   function showTooltip(d, mx, my) {
+    const t = T[currentLang];
     const tt = document.getElementById('tooltip');
-    tt.querySelector('.tt-title').textContent = d.title;
+    tt.querySelector('.tt-title').textContent = titleFor(d);
 
     const exp = d.exposure;
     if (exp != null) {
       const color = exposureColorSolid(exp);
       tt.querySelector('.tt-exposure').innerHTML =
-        `<span style="color:${color};font-weight:600;">AI Exposure: ${exp}/10</span>` +
+        `<span style="color:${color};font-weight:600;">${t.ttExposure}: ${exp}/10</span>` +
         `<div style="margin-top:3px;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;">` +
         `<div style="height:100%;width:${exp * 10}%;background:${color};border-radius:2px;"></div></div>`;
     } else {
@@ -456,13 +628,13 @@ footer a:hover { text-decoration: underline; }
     }
 
     let stats = '';
-    if (d._groupTitle) stats += `<span class="label">Group</span><span class="value">${d._groupTitle}</span>`;
-    stats += `<span class="label">Jobs</span><span class="value">${formatNumber(d.employment)}</span>`;
+    if (d._groupTitle) stats += `<span class="label">${t.ttGroup}</span><span class="value">${d._groupTitle}</span>`;
+    stats += `<span class="label">${t.ttJobs}</span><span class="value">${formatNumber(d.employment)}</span>`;
     stats += `<span class="label">ISCO</span><span class="value">${d.code}</span>`;
-    if (d.skill_level) stats += `<span class="label">Education</span><span class="value">${SKILL_LABELS[d.skill_level] || '\u2014'}</span>`;
-    if (d.confidence) stats += `<span class="label">Confidence</span><span class="value">${d.confidence}</span>`;
+    if (d.skill_level) stats += `<span class="label">${t.ttEducation}</span><span class="value">${t.skillLabels[d.skill_level] || '\u2014'}</span>`;
+    if (d.confidence) stats += `<span class="label">${t.ttConfidence}</span><span class="value">${d.confidence}</span>`;
     tt.querySelector('.tt-stats').innerHTML = stats;
-    tt.querySelector('.tt-rationale').textContent = d.rationale || '';
+    tt.querySelector('.tt-rationale').textContent = rationaleFor(d);
 
     let tx = mx + 16, ty = my - 16;
     if (tx + 340 > window.innerWidth) tx = mx - 356;
@@ -479,65 +651,58 @@ footer a:hover { text-decoration: underline; }
 
   // ── Stats ────────────────────────────────────────────────────────────
   function updateStats() {
+    const t = T[currentLang];
     const leaves = allLeaves;
     const totalJobs = leaves.reduce((s, d) => s + (d.employment || 0), 0);
+    document.getElementById('stat-total-label').textContent = t.statTotal;
     document.getElementById('statTotal').textContent = (totalJobs / 1e6).toFixed(1) + 'M';
 
-    // Avg exposure
     let wS = 0, wC = 0;
     for (const d of leaves) {
       if (d.exposure != null && d.employment) { wS += d.exposure * d.employment; wC += d.employment; }
     }
     const avg = wC > 0 ? wS / wC : 0;
     document.getElementById('block2').innerHTML =
-      `<h3>Avg. exposure</h3>
+      `<h3>${t.statAvg}</h3>
        <div class="stat-big"><span style="color:${exposureColorSolid(avg)}">${avg.toFixed(1)}</span></div>
-       <div class="stat-label">job-weighted, 0\u201310</div>`;
+       <div class="stat-label">${t.statAvgSub}</div>`;
 
-    // Histogram
     const histogram = new Array(11).fill(0);
     for (const d of leaves) { if (d.exposure != null && d.employment) histogram[d.exposure] += d.employment; }
     const maxH = Math.max(...histogram);
     document.getElementById('block3').innerHTML =
-      `<h3>Jobs by exposure</h3>
+      `<h3>${t.statHistogram}</h3>
        <div class="histogram">${histogram.map((c, i) =>
          `<div class="bar" style="height:${Math.max(2, maxH > 0 ? c / maxH * 100 : 0)}%;background:${exposureColorRGBA(i, 0.7)}"></div>`
        ).join('')}</div>
        <div class="hist-labels"><span>0</span><span>5</span><span>10</span></div>`;
 
-    // Tier breakdown
-    const tierDefs = [
-      { label: 'Minimal (0\u20131)', lo: 0, hi: 1, mid: 0.5 },
-      { label: 'Low (2\u20133)', lo: 2, hi: 3, mid: 2.5 },
-      { label: 'Moderate (4\u20135)', lo: 4, hi: 5, mid: 4.5 },
-      { label: 'High (6\u20137)', lo: 6, hi: 7, mid: 6.5 },
-      { label: 'Very high (8\u201310)', lo: 8, hi: 10, mid: 9 },
-    ];
-    const tiers = tierDefs.map(t => {
+    const tierDefs = t.tierLabels.map((label, idx) => {
+      const ranges = [[0,1],[2,3],[4,5],[6,7],[8,10]];
+      const mids = [0.5, 2.5, 4.5, 6.5, 9];
+      return { label, lo: ranges[idx][0], hi: ranges[idx][1], mid: mids[idx] };
+    });
+    const tiers = tierDefs.map(td => {
       let jobs = 0;
       for (const d of leaves) {
-        if (d.exposure != null && d.employment && d.exposure >= t.lo && d.exposure <= t.hi) jobs += d.employment;
+        if (d.exposure != null && d.employment && d.exposure >= td.lo && d.exposure <= td.hi) jobs += d.employment;
       }
-      return { ...t, jobs, color: exposureColorSolid(t.mid) };
+      return { ...td, jobs, color: exposureColorSolid(td.mid) };
     });
     document.getElementById('block4').innerHTML =
-      `<h3>Exposure tiers</h3><div class="tier-bar">${tiers.map(t =>
+      `<h3>${t.statTiers}</h3><div class="tier-bar">${tiers.map(td =>
         `<div class="tier-row">
-          <div class="tier-color" style="background:${t.color}"></div>
-          <span class="tier-name">${t.label}</span>
-          <span class="tier-jobs">${formatNumber(t.jobs)}</span>
-          <span class="tier-pct">${totalJobs > 0 ? (t.jobs / totalJobs * 100).toFixed(0) : 0}%</span>
+          <div class="tier-color" style="background:${td.color}"></div>
+          <span class="tier-name">${td.label}</span>
+          <span class="tier-jobs">${formatNumber(td.jobs)}</span>
+          <span class="tier-pct">${totalJobs > 0 ? (td.jobs / totalJobs * 100).toFixed(0) : 0}%</span>
         </div>`
       ).join('')}</div>`;
 
-    // Exposure by pay (using group-level wage_monthly)
-    const PAY_BANDS = [
-      { label: '\u2264 CHF 5K', min: 0, max: 5000 },
-      { label: 'CHF 5\u20136K', min: 5000, max: 6000 },
-      { label: 'CHF 6\u20137K', min: 6000, max: 7000 },
-      { label: 'CHF 7\u20139K', min: 7000, max: 9000 },
-      { label: 'CHF 9K+', min: 9000, max: Infinity },
-    ];
+    const PAY_BANDS = t.payBands.map((label, idx) => {
+      const ranges = [[0,5000],[5000,6000],[6000,7000],[7000,9000],[9000,Infinity]];
+      return { label, min: ranges[idx][0], max: ranges[idx][1] };
+    });
     const byPay = PAY_BANDS.map(band => {
       let wS = 0, wC = 0;
       for (const d of leaves) {
@@ -550,7 +715,7 @@ footer a:hover { text-decoration: underline; }
       return { ...band, avg: wC > 0 ? wS / wC : 0 };
     });
     document.getElementById('block5').innerHTML =
-      `<h3>Exposure by pay</h3><div class="hbar-chart">${byPay.map(g =>
+      `<h3>${t.statByPay}</h3><div class="hbar-chart">${byPay.map(g =>
         `<div class="hbar-row">
           <span class="hbar-label">${g.label}</span>
           <div class="hbar-track"><div class="hbar-fill" style="width:${g.avg / 10 * 100}%;background:${exposureColorRGBA(g.avg, 0.8)}"></div></div>
@@ -558,13 +723,7 @@ footer a:hover { text-decoration: underline; }
         </div>`
       ).join('')}</div>`;
 
-    // Exposure by education (skill_level)
-    const EDU_GROUPS = [
-      { label: 'Primary education', levels: [1] },
-      { label: 'Apprenticeship / upper sec.', levels: [2] },
-      { label: 'Higher vocational', levels: [3] },
-      { label: "Bachelor's or higher", levels: [4] },
-    ];
+    const EDU_GROUPS = t.eduLabels.map((label, idx) => ({ label, levels: [idx + 1] }));
     const byEdu = EDU_GROUPS.map(eg => {
       let wS = 0, wC = 0;
       for (const d of leaves) {
@@ -576,7 +735,7 @@ footer a:hover { text-decoration: underline; }
       return { ...eg, avg: wC > 0 ? wS / wC : 0 };
     });
     document.getElementById('block6').innerHTML =
-      `<h3>Exposure by education</h3><div class="hbar-chart">${byEdu.map(g =>
+      `<h3>${t.statByEdu}</h3><div class="hbar-chart">${byEdu.map(g =>
         `<div class="hbar-row">
           <span class="hbar-label">${g.label}</span>
           <div class="hbar-track"><div class="hbar-fill" style="width:${g.avg / 10 * 100}%;background:${exposureColorRGBA(g.avg, 0.8)}"></div></div>
@@ -584,7 +743,6 @@ footer a:hover { text-decoration: underline; }
         </div>`
       ).join('')}</div>`;
 
-    // Wages exposed (annual wages in jobs scoring 7+)
     let wagesExposed = 0;
     for (const d of leaves) {
       if (d.exposure != null && d.exposure >= 7 && d.employment && d.wage_monthly) {
@@ -592,9 +750,9 @@ footer a:hover { text-decoration: underline; }
       }
     }
     document.getElementById('block7').innerHTML =
-      `<h3>Wages exposed</h3>
+      `<h3>${t.statWages}</h3>
        <div class="stat-big" style="color:${exposureColorSolid(8)}">CHF ${(wagesExposed / 1e9).toFixed(0)}B</div>
-       <div class="stat-label">annual, in occupations scoring 7+</div>`;
+       <div class="stat-label">${t.statWagesSub}</div>`;
   }
 
   // ── Legend ────────────────────────────────────────────────────────────
@@ -621,6 +779,11 @@ footer a:hover { text-decoration: underline; }
     draw();
   });
 
+  // Language selector
+  document.querySelectorAll('#lang-selector button').forEach(btn => {
+    btn.addEventListener('click', () => setLang(btn.dataset.lang));
+  });
+
   function resize() {
     dpr = window.devicePixelRatio || 1;
     layout();
@@ -629,7 +792,13 @@ footer a:hover { text-decoration: underline; }
 
   window.addEventListener('resize', resize);
 
-  // ── Load ─────────────────────────────────────────────────────────────
+  // ── Init ─────────────────────────────────────────────────────────────
+  currentLang = getLang();
+  applyTranslations();
+  document.querySelectorAll('#lang-selector button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === currentLang);
+  });
+
   fetch('data.json')
     .then(r => r.json())
     .then(d => {
