@@ -1,6 +1,6 @@
 # AI Exposure of Jobs in Switzerland
 
-Interactive treemap visualizing AI exposure scores for 406 Swiss occupations covering 3.9 million jobs.
+Interactive treemap visualizing AI exposure scores for 406 Swiss occupations covering 3.9 million jobs. Available in French, German, and English.
 
 **[Live demo →](https://ipols.github.io/swiss-jobs/)**
 
@@ -32,12 +32,14 @@ BFS SAKE + ESS APIs
 
 ESCO REST API
   → fetch_esco_fast.py → esco/occupations_full.json (skills per occupation)
+  → fetch_esco_titles.py --language fr → esco/titles_fr.json (French titles)
 
 All of the above
   → score.py (Claude API + prompt.md) → scores.json
+  → translate_rationales.py → rationales_fr.json, rationales_de.json
 
 All of the above
-  → build_site_data.py → site/data.json → site/index.html
+  → build_site_data.py → site/data.json → site/index.html (FR/DE/EN)
 ```
 
 ## Reproduce
@@ -61,10 +63,16 @@ uv run python fetch_esco_fast.py
 # 4. Score all occupations with Claude (~30 min, incremental save)
 uv run python score.py
 
-# 5. Build site data
+# 5. Fetch French titles from ESCO (~1 min)
+uv run python fetch_esco_titles.py --language fr
+
+# 6. Translate rationales into French and German (~5 min)
+uv run python translate_rationales.py
+
+# 7. Build site data (merges all languages)
 uv run python build_site_data.py
 
-# 6. Preview
+# 8. Preview
 python3 -m http.server 8080 -d site
 ```
 
