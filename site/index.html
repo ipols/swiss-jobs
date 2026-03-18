@@ -500,7 +500,8 @@ footer a:hover { text-decoration: underline; }
   // ── Helpers ──────────────────────────────────────────────────────────
   function formatNumber(n) {
     if (n == null) return '\u2014';
-    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e9) return (n / 1e9).toFixed(0) + {fr:'Md',de:' Mrd.',en:'B'}[currentLang];
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + {fr:'M',de:' Mio.',en:'M'}[currentLang];
     if (n >= 1e3) return Math.round(n / 1e3) + 'K';
     return n.toLocaleString();
   }
@@ -655,7 +656,7 @@ footer a:hover { text-decoration: underline; }
     const leaves = allLeaves;
     const totalJobs = leaves.reduce((s, d) => s + (d.employment || 0), 0);
     document.getElementById('stat-total-label').textContent = t.statTotal;
-    document.getElementById('statTotal').textContent = (totalJobs / 1e6).toFixed(1) + 'M';
+    document.getElementById('statTotal').textContent = formatNumber(totalJobs);
 
     let wS = 0, wC = 0;
     for (const d of leaves) {
@@ -751,7 +752,7 @@ footer a:hover { text-decoration: underline; }
     }
     document.getElementById('block7').innerHTML =
       `<h3>${t.statWages}</h3>
-       <div class="stat-big" style="color:${exposureColorSolid(8)}">CHF ${(wagesExposed / 1e9).toFixed(0)}B</div>
+       <div class="stat-big" style="color:${exposureColorSolid(8)}">CHF ${formatNumber(wagesExposed)}</div>
        <div class="stat-label">${t.statWagesSub}</div>`;
   }
 
